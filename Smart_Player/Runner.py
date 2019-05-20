@@ -133,8 +133,9 @@ class Runner:
         # For reference Window Dimensions
         #self.window_height = 600
         #self.window_width = 800
+        self.obst.x = self.window_width
         self.player_pos_x = 10
-        self.player_pos_y = 800# self.window_height - self.window_height / 2
+        self.player_pos_y =  self.window_height - self.window_height / 2
         self.draw_Player(self.player_pos_x, self.player_pos_y, self.player_width, self.player_height)
         self.delta_y = 0
         self.score = 0

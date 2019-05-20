@@ -6,4 +6,4 @@ from Neural_Network import Neural_Network
 #generate_data()
 
 nn = Neural_Network()
-nn.train(10,20)
+nn.train(10,20,.1)
