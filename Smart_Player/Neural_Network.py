@@ -28,8 +28,8 @@ class Neural_Network:
         self.output = 3
         self.learning_rate = 0
         # In the output the player can go up or down
-        self.weights_1 = np.random.randn(self.middle, self.input)
-        self.weights_2 = np.random.randn(self.output,self.middle)
+        self.weights_1 = np.random.randn(self.input, self.middle)
+        self.weights_2 = np.random.randn(self.middle,self.output)
         #weight_fileA = open("weights_1.txt", "r")
         #weight_fileB = open("weights_2.txt", "r")
         '''
@@ -46,8 +46,9 @@ class Neural_Network:
     def forward(self, x):
         # input_x = copy.deepcopy(x)
         self.input_layer = self.sigmoid(x)
-        self.hidden_layer = self.sigmoid(np.matmul(self.weights_1, x))
-        self.output_layer = self.sigmoid(np.matmul(self.weights_2, self.hidden_layer))
+        self.hidden_layer = self.sigmoid(np.matmul(x,self.weights_1))
+        #return self.hidden_layer
+        self.output_layer = self.sigmoid(np.matmul(self.hidden_layer,self.weights_2))
         return self.output_layer
 
     def sigmoid(self, value):
@@ -57,20 +58,20 @@ class Neural_Network:
         return value * (1 - value)
 
     def backward(self, given_input, desired_output, predicted_output):
-        #Backward Propagation Function
-        #New weight = old weight — Derivative Rate * learning rate
+        # Backward Propagation Function
+        # New weight = old weight — Derivative Rate * learning rate
         d_rate = 0
         d_rate_2 = 0
         error = desired_output - predicted_output
         squared_error = np.square(error)
-        d_rate_2 = np.gradient(squared_error)
+        d_rate_2 = self.sigmoidPrime(squared_error)# np.gradient(squared_error)
         weight1_error = d_rate_2 - self.hidden_layer
         squared_error_weight_1 = np.square(weight1_error)
-        d_rate = np.gradient(squared_error_weight_1)
-        self.weights_1 = self.weights_1 - d_rate * self.learning_rate
+        d_rate = self.sigmoidPrime(squared_error_weight_1)#np.gradient(squared_error_weight_1)
+        self.weights_1 = self.weights_1 - self.learning_rate*d_rate*self.hidden_layer
         self.weights_2 = self.weights_2 - d_rate_2 * self.learning_rate
-        #print(error)
-        #print(squared_error)
+        # print(error)
+        # print(squared_error)  
     def train(self, target, epoch, rate):
         # Run the game on different thread so nothing freezes
         self.learning_rate = rate
@@ -93,11 +94,14 @@ class Neural_Network:
         while target > self.runner.score:
             # if(self.runner.exitGame):
             # break
-            input_x = np.array([self.runner.obst.x - self.runner.player_pos_x, self.runner.player_pos_y - self.runner.obst.y, self.runner.window_height - self.runner.player_pos_y])
+            if self.runner.obst.x == None:
+                time.sleep(2)
+            #self.runner.obst.x - self.runner.player_pos_x
+            input_x = np.array([self.runner.player_pos_y, self.runner.player_pos_y - self.runner.obst.y, self.runner.window_height - self.runner.player_pos_y])
             player_x = self.runner.player_pos_x
             obstacle_x = self.runner.obst.x
             player_y = self.runner.player_pos_y
-            obstacle_y = obstacle_x = self.runner.obst.x
+            obstacle_y = self.runner.obst.y
             # Check if the Array is a 0D Array or = None
             # if input_x.all() == None:
             # break
@@ -115,42 +119,53 @@ class Neural_Network:
                 self.runner.move_up()
                 output_y = np.array(
                     [self.runner.player_pos_x, self.runner.player_pos_y, self.runner.obst.y])  # ,self.runner.obst.y])
-                time.sleep(1)
+                #time.sleep(1)
             elif maxed == output[1]:
                 print("Option B")
                 option = "B"
-                time.sleep(1)
+                #time.sleep(1)
             elif maxed == output[2]:
                 print("Option C")
                 option = "C"
                 self.runner.move_down()
                 output_y = np.array([self.runner.player_pos_x, self.runner.player_pos_y, self.runner.obst.y])
-                time.sleep(1)
+                #time.sleep(1)
             else:
                 print("Default Option")
-                time.sleep(1)
+                #time.sleep(1)
                 continue
             # What should our Y be in order for this to work out perfectly??
             y = [0, 0, 0]
             #Reference Window Height and Width
             #self.window_height = 600  # 800
             #self.window_width = 800  # 1000
-            if player_y > 400:
-                if obstacle_y+50 > player_y :
-                    print("Player > 400 & Player = Obstacle")
-                    y = [0,0,1]
-                else:
-                    y = [0,1,0]
-                    print("Player > 400 & Player != Obstacle")
-            if player_y <=400:
-                if obstacle_y == player_y:
-                    print("Player < 400 & Player = Obstacle")
-                    y = [1,0,0]
-                else:
-                    print("Player > 400 & Player != Obstacle")
-                    y = [0,1,0]
-            if target < self.runner.score:
-                break
+            y = [0, 0, 0]
+            if obstacle_y == player_y:
+                y = [0, 0, 1]
+            elif obstacle_y + self.runner.obst.radius > player_y:
+                y = [1, 0, 0]
+            elif obstacle_y - self.runner.obst.radius <= player_y:
+                y = [0, 0, 1]
+            else:
+                y = [0, 1, 0]
+            if self.runner.obst.y - self.runner.obst.radius <= player_y:
+                y = [0, 0, 1]
+            if self.runner.obst.y + self.runner.obst.radius >= player_y:
+                y = [1, 0, 0]
+            if player_y + 50 >= self.runner.window_height:
+                y = [1, 0, 0]
+            if player_y - 50 <= 0:
+                y = [0, 0, 1]
+            if self.runner.crashed:
+                if option == "A":
+                    y = [0, 0, 1]
+                if option == "B":
+                    y = [1, 0, 1]
+                if option == "C":
+                    y = [1, 0, 0]
+                    # self.runner.game_loop()
+                    if target < self.runner.score:
+                        break
             time.sleep(2)
             # Backward Propogation to make the neural network learn
             self.backward(input_x, y, output)
@@ -163,12 +178,12 @@ class Neural_Network:
         file_weights2 = open("weights_2.txt", "w")
         file_weights2.write(str(self.weights_2))
 
-    def lossFunction(self, predicted_y, actual_y):
+    def lossFunction(self, predicted_y, desired_y):
         # We will use Mean Squared Error for our loss
-        # Loss = sum of (pred_y - actual_y)^2
-        error = (predicted_y - actual_y) ** 2  # **2 is squaring it
+        # Loss = sum of (pred_y - desired_y)^2
+        error = (predicted_y - desired_y) ** 2  # **2 is squaring it
         error = np.sum(error)
-        error = error / actual_y.size
+        error = error / desired_y.size
         return error
 
     def predict(self):
