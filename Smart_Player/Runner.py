@@ -181,6 +181,10 @@ class Runner:
                 self.delta_y = 0
             if self.window_height < self.player_pos_y + self.player_height + 5 and self.delta_y > 0:
                 self.delta_y = 0
+            if self.obst.y >= self.player_pos_y:
+                self.obst.y = self.obst.y - 2
+            if self.obst.y < self.player_pos_y:
+                self.obst.y = self.obst.y + 2
             # Drawing the Window
             self.window.fill(self.grey)
             self.player_pos_y += self.delta_y
